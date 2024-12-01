@@ -5,7 +5,7 @@ use std::io::BufRead;
 use std::path::absolute;
 
 fn read_from_file() -> (Vec<i32>, Vec<i32>){
-    let mut file = File::open("test");
+    let mut file = File::open("inputs");
     let result:(Vec<i32>, Vec<i32>) = match file {
         Ok(file) => {
             let lines = io::BufReader::new(file).lines();
@@ -41,21 +41,21 @@ fn do_task_two(inputs: &mut (Vec<i32>, Vec<i32>)) {
     // we first sort and than simply count by iterating
     let mut left = &mut inputs.0;
     let mut right = &mut inputs.1;
-    left.dedup();
+    left.sort();
     let mut cnt: HashMap<i32, i32> = HashMap::new();
-    right.iter().map(|r| cnt.entry(r.clone()).or_insert(r.clone()) =+ 1);
 
-    println!("{:?}", cnt);
+    right.iter().for_each(|&r| *cnt.entry(r).or_insert(0) += 1);
+
+    let mut sum = 0;
+    left.iter().for_each(|l| { sum += cnt.get(l).unwrap_or(&0)*l;});
+
+    println!("{:?}", sum);
 }
 
 fn main() {
     let mut inputs = read_from_file();
     //do_task_one(&mut inputs);
     do_task_two(&mut inputs);
-
-
-
-
 
     println!("{:?}", inputs);
 }

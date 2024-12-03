@@ -62,7 +62,7 @@ fn do_task_one(inputs: &mut Vec<Vec<i32>>) {
     println!("{}", count);
 }
 
-fn check_vector(reactor: &mut Vec<i32>, skipped: bool) -> bool {
+fn check_vector(reactor: &mut Vec<i32>) -> bool {
     let mut i = 0;
     let mut n = i+1;
     let mut dir = 0;
@@ -81,36 +81,15 @@ fn check_vector(reactor: &mut Vec<i32>, skipped: bool) -> bool {
             }
 
             if dir != tmp_dir {
-                if (skipped) {
-                    println!("problem {:?} {:?} {:?} {:?} ", x, y, i, n);
-                    return false;
-                }
-
-                println!("problem {:?} {:?} {:?} {:?} remove {:?}", x, y, i, n, i);
-                reactor.remove(i);
-                return check_vector(reactor, true);
+                return false;
             }
 
             if diff == 0  {
-                if (skipped) {
-                    println!("problem {:?} {:?} {:?} {:?} ", x, y, i, n);
-                    return false;
-                }
-
-                println!("problem {:?} {:?} {:?} {:?} remove {:?}", x, y, i, n, i);
-                reactor.remove(i);
-                return check_vector(reactor, true);
+                return false;
             }
 
             if  !(1..=3).contains(&diff) {
-                if (skipped) {
-                    println!("problem {:?} {:?} {:?} {:?} ", x, y, i, n);
-                    return false;
-                }
-
-                println!("problem {:?} {:?} {:?} {:?} remove {:?}", x, y, i, n, i);
-                reactor.remove(i);
-                return check_vector(reactor, true);
+                return false;
             }
 
             i = n;
@@ -127,11 +106,27 @@ fn check_vector(reactor: &mut Vec<i32>, skipped: bool) -> bool {
 fn do_task_two(inputs: &mut Vec<Vec<i32>>) {
     let mut count = 0;
     for reactor in inputs {
-        let res = check_vector(reactor, false);
-        println!("{:?} {:?}", res, reactor);
-        if res {
-            count +=1;
+        let mut res = check_vector(reactor);
+
+        if !res {
+            let mut i = 0;
+            while i < reactor.len() {
+                let mut cloned = reactor.clone();
+                cloned.remove(i);
+                res = check_vector(&mut cloned);
+                if res {
+                    count += 1;
+                    println!("{:?} {:?}", res, reactor);
+                    break;
+                }
+                i += 1;
+            }
+        } else {
+            count += 1;
+            println!("{:?} {:?}", res, reactor);
+            continue;
         }
+
     }
     println!("{:?}", count);
 }

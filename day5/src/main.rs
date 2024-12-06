@@ -176,6 +176,7 @@ fn do_task_two(
             let mid = page_clone.len() / 2;
             println!("{:?} adding {:?}", mid, page_clone[mid]);
             sum += page_clone[mid];
+
         }
     }
     println!("{}", sum);

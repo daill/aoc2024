@@ -7,7 +7,7 @@ use std::iter::Iterator;
 use std::ptr::copy;
 
 fn read_from_file() -> Vec<(i64, Vec<i64>)> {
-    let mut file = File::open("test");
+    let mut file = File::open("inputs");
     let result: Vec<(i64, Vec<i64>)> = match file {
         Ok(file) => {
             let lines = io::BufReader::new(file).lines();
@@ -69,7 +69,7 @@ fn do_calc(target: i64, numbers: &Vec<i64>, num: usize, operator: char, sequence
 }
 
 fn do_calc_two(target: i64, numbers: &Vec<i64>, num: usize, operator: char, sequence: &mut Vec<char>) -> bool {
-    if num == numbers.len()-1 {
+    if num >= numbers.len()-1 {
         println!("{:?} {:?}", target, sequence);
         if target == numbers[numbers.len()-1] {
             println!("true {:?}", true);
@@ -106,22 +106,23 @@ fn do_calc_two(target: i64, numbers: &Vec<i64>, num: usize, operator: char, sequ
         sequence.pop();
 
 
-        if target >= 10 {
-            let mstr = target.to_string().chars().collect::<Vec<char>>();
-            let nstr = numbers[num].to_string().chars().collect::<Vec<char>>();
-            println!("------ {:?} {:?}", &mstr[..(mstr.len()-nstr.len())], nstr);
-            if &mstr[..(mstr.len()-nstr.len())] == nstr {
+        let mstr = target.to_string().chars().collect::<Vec<char>>();
+        let nstr = numbers[num].to_string().chars().collect::<Vec<char>>();
+
+        if mstr.len() > nstr.len() {
+            println!("{:?} {:?} {:?} {:?}",mstr, mstr.len(), nstr.len(), nstr);
+            println!("------{:?} {:?} {:?}", target, &mstr[(mstr.len()-nstr.len())..], nstr);
+            if &mstr[(mstr.len()-nstr.len())..] == nstr {
                 let tstr = String::from_iter(&mstr[..(mstr.len()-numbers[num].to_string().len())]);
                 let pstr: i64 = tstr.parse::<i64>().unwrap();
                 println!("{:?} {:?} {:?} {:?} {:?}", target, pstr, numbers[num], numbers, '|' );
 
                 sequence.push('|');
-                ret = do_calc_two(pstr, numbers, num + 2, operator, sequence);
+                ret = do_calc_two(pstr, numbers, num + 1, operator, sequence);
                 if ret {
                     return true
                 }
             }
-
         }
 
 

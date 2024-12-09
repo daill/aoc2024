@@ -4,10 +4,11 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::{self, Write};
 use std::iter::Iterator;
+use std::path::Component::ParentDir;
 use std::ptr::copy;
 
 fn read_from_file() -> (Vec<char>, Vec<(i32, i32)>, i32, i32) {
-    let mut file = File::open("test");
+    let mut file = File::open("inputs");
     let result: (Vec<char>, Vec<(i32, i32)>, i32, i32) = match file {
         Ok(file) => {
             let lines = io::BufReader::new(file).lines();
@@ -41,70 +42,75 @@ fn read_from_file() -> (Vec<char>, Vec<(i32, i32)>, i32, i32) {
 fn do_task_one(chars: Vec<char>, inputs: &Vec<(i32, i32)>, width: i32, height: i32) {
     let mut sum = 0;
     let mut seen: Vec<((i32, i32),(i32, i32))> = Vec::new();
-    let mut found: Vec<(i32, i32)> = Vec::new();
+    let mut found: HashSet<(i32, i32)> = HashSet::new();
     for i in 0..inputs.len() {
-        for j in 0..inputs.len() {
-            if chars[i] == chars[j] && i != j {
+        for j in i+1..inputs.len() {
+            if chars[i] == chars[j] {
                 //println!("init {:?} {:?}", inputs[i], inputs[j]);
                 let p1 = inputs[i];
                 let p2 = inputs[j];
 
-                if (!seen.contains(&(p1, p2)) && !seen.contains(&(p2, p1))){
-                    //println!("{:?} {:?} {:?}", p1, p2, seen);
-                    seen.push((p1, p2));
 
-                    let dx = p2.0 - p1.0;
-                    let dy = p2.1 - p1.1;
+                let dx = p2.0 - p1.0;
+                let dy = p2.1 - p1.1;
 
-                    let m = (dy as f32 / dx as f32);
-                    // b = y1 - mx1
-                    let b = (p1.1 as f32 - m * p1.0 as f32);
+                let point1: (i32, i32) = (p1.0 - dx, p1.1 - dy);
+                let point2: (i32, i32) = (p2.0 + dx, p2.1 + dy);
 
-                    let mut points: Vec<((i32, i32), i32, i32)> = Vec::new();
+                println!("{:?} {:?} {:?} {:?} {:?}", chars[i], p1, p2, point1, point2);
+
+                if point1.0 >= 0 && point1.0 < width && point1.1 >= 0 && point1.1 < height {
+                    println!("{:?} {:?} {:?} {:?}", chars[i], p1, p2, point1);
+                    found.insert(point1);
+                }
+
+                if point2.0 >= 0 && point2.0 < width && point2.1 >= 0 && point2.1 < height {
+                    println!("{:?} {:?} {:?} {:?}", chars[i], p1, p2, point2);
+                    found.insert(point2);
+                }
+            }
+        }
+    }
+
+    println!("{:?}",  found.len());
+}
+
+fn do_task_two(chars: Vec<char>, inputs: &Vec<(i32, i32)>, width: i32, height: i32) {
+    let mut sum = 0;
+    let mut seen: Vec<((i32, i32),(i32, i32))> = Vec::new();
+    let mut found: HashSet<(i32, i32)> = HashSet::new();
+    for i in 0..inputs.len() {
+        for j in i+1..inputs.len() {
+            if chars[i] == chars[j] {
+                //println!("init {:?} {:?}", inputs[i], inputs[j]);
+                let p1 = inputs[i];
+                let p2 = inputs[j];
 
 
-                    for x in 0..width {
-                        let y = (m * (x as f32) + b);
+                let dx = p2.0 - p1.0;
+                let dy = p2.1 - p1.1;
 
-                        if y >= 0.0 && y.fract() == 0.00000 && y < height as f32 {
+                println!("{:?} {:?}", p1, p2);
+                for h in 0..height {
+                    for w in 0..width {
 
-                            let point = (x, y as i32);
-                            if !inputs.contains(&point) {
-                                //if point != p1 && point != p2 {
-                                let l1 = (p1.0 - point.0).abs() + (p1.1 - point.1).abs();
-                                let l2 = (p2.0 - point.0).abs() + (p2.1 - point.1).abs();
-                                points.push((point, l1, l2));
-                                //println!(" --- x {:?} y {:?} {:?} {:?}", x, (m * (x as f32) + b), m, b);
-                                //}
-                            }
-
-                        }
-                        //println!("{:?}", points);
-
-                    }
-
-                    for p in 0..points.len() {
-                        if points[p].1 * 2 == points[p].2 || points[p].2 * 2 == points[p].1 {
-                            println!("{:?} {:?} {:?} {:?}", chars[i], inputs[i], inputs[j], points[p]);
-                            sum += 1;
-                            found.push(points[p].0);
+                        if (p1.0*(p2.1-h)+p2.0*(h - p1.1)+w*(p1.1-p2.1)).abs() == 0 {
+                            println!("{:?} {:?} {:?} {:?}", chars[i], p1, p2, (w,h));
+                            found.insert((w,h));
                         }
                     }
                 }
             }
         }
     }
-    println!("{:?} {:?} {:?}", sum, found.len(), found);
-}
 
-fn do_task_two() {
-
+    println!("{:?} {:?}",  found.len(), found);
 }
 
 fn main() {
     let inputs = read_from_file();
 
     println!("{:?}", inputs);
-    do_task_one(inputs.0, &inputs.1, inputs.2, inputs.3);
-    //do_task_two(&inputs);
+    //do_task_one(inputs.0, &inputs.1, inputs.2, inputs.3);
+    do_task_two(inputs.0, &inputs.1, inputs.2, inputs.3);
 }

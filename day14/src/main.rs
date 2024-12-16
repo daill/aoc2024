@@ -130,7 +130,7 @@ fn do_task_two(inputs: &Vec<((i64, i64), (i64, i64))>) {
             }
         });
 
-        // wild guess 
+        // wild guess
         if points.len() == inputs.len() {
             println!("{:?}", u+1);
             break;

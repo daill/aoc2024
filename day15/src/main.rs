@@ -12,7 +12,7 @@ use std::sync::atomic::fence;
 use regex::Regex;
 
 fn read_from_file() -> (HashSet<(i32, i32)>, HashSet<(i32, i32)>, (i32, i32), Vec<char>, i32, i32) {
-    let mut file = File::open("test");
+    let mut file = File::open("inputs");
     let result: (HashSet<(i32, i32)>, HashSet<(i32, i32)>, (i32, i32), Vec<char>, i32, i32) = match file {
         Ok(file) => {
             let lines = io::BufReader::new(file).lines();
@@ -165,35 +165,38 @@ fn check_t2(walls: &HashSet<(i32, i32)>, cargo: &HashSet<(i32, i32)>, start: &(i
     let mut valid = false;
     let np = (start.0+mov.0, start.1+mov.1);
 
-
     if mov != (-1,0) && mov != (1,0) {
+        //println!("{:?} {:?} \n {:?} \n {:?}",start, np, changelog, cargo);
         // when up and down check the crate
         if let Some(cp) = crates.get(&start) {
             let mut cpn = (cp.0+mov.0, cp.1+mov.1);
+
+            //println!("{:?} {:?} {:?} {:?}",start, np, cp, cpn);
 
             if walls.contains(&np) || walls.contains(&cpn) {
                 valid = false;
             } else if cargo.contains(&np) || cargo.contains(&cpn) {
 
-                if cargo.contains(&np) {
                     // when a point has been found, we need it's neighbour
                     valid = check_t2(walls, cargo, &np, mov, width, height, changelog, &crates);
                     changelog.push(*start);
 
-                }
-                if cargo.contains(&cpn) {
+                    if !valid {
+                        return false;
+                    }
+
+
                     // when a point has been found, we need it's neighbour
                     valid = check_t2(walls, cargo, &cpn, mov, width, height, changelog, &crates);
                     changelog.push(*cp);
-
-                }
             } else {
                 changelog.push(*start);
                 changelog.push(*cp);
                 valid = true;
             }
         } else {
-            valid = false;
+            //println!("not contained in crates {:?}", start);
+            valid = true;
         }
 
     } else {
@@ -241,11 +244,14 @@ fn do_task_two(walls: &HashSet<(i32, i32)>, cargo: &HashSet<(i32, i32)>, start: 
 
         let mut valid = true;
         if cargoc.contains(&newpos) {
+            //printmap(&nw, &cargoc, &botpos, width*2, height);
+
             let mut changelog: Vec<(i32, i32)> = Vec::new();
             valid = check_t2(&nw, &cargoc, newpos, mov, width, height, &mut changelog, &crates);
             //println!("{:?} {:?}", valid, &changelog);
             let mut mergeset: HashSet<(i32, i32)> = HashSet::new();
-            //println!("{:?}\n {:?} {:?} {:?}", changelog, crates, start, valid);
+            let mut mergemap: HashMap<(i32, i32), (i32, i32)> = HashMap::new();
+            //println!("{:?} {:?}\n {:?} \n{:?} {:?}", mov, changelog, crates, newpos, valid);
             if valid {
                 for change in changelog {
                     newcargo.remove(&change);
@@ -255,11 +261,12 @@ fn do_task_two(walls: &HashSet<(i32, i32)>, cargo: &HashSet<(i32, i32)>, start: 
                         crates.remove(&c);
                         //mergeset.insert((c.0+mov.0, c.1+mov.1));
 
-                        crates.insert((change.0+mov.0, change.1+mov.1), (c.0+mov.0, c.1+mov.1));
-                        crates.insert((c.0+mov.0, c.1+mov.1), (change.0+mov.0, change.1+mov.1));
+                        mergemap.insert((change.0+mov.0, change.1+mov.1), (c.0+mov.0, c.1+mov.1));
+                        mergemap.insert((c.0+mov.0, c.1+mov.1), (change.0+mov.0, change.1+mov.1));
                     }
                 }
                 //println!("{:?} \n {:?}", newcargo, mergeset);
+                crates.extend(mergemap);
                 newcargo.extend(mergeset);
                 cargoc = newcargo;
             }
@@ -275,7 +282,11 @@ fn do_task_two(walls: &HashSet<(i32, i32)>, cargo: &HashSet<(i32, i32)>, start: 
 
     printmap(&nw, &cargoc, &botpos, width*2, height);
     let mut sum: i64 = 0;
-    cargoc.iter().for_each(|p| sum += (p.1 as i64 * 100) + p.0 as i64 );
+    crates.iter().for_each(|(p1, p2)| {
+        if p1.0 <= p2.0 {
+            sum += (100*p1.1) as i64 + p1.0 as i64;
+        }
+    } );
     println!("{:?}", sum);
 }
 

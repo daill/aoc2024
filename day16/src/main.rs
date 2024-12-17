@@ -1,6 +1,6 @@
 use std::cmp::max;
 use itertools::Itertools;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::BufRead;
 use std::io::{self, Write};
@@ -12,7 +12,7 @@ use std::sync::atomic::fence;
 use regex::Regex;
 
 fn read_from_file() -> (HashSet<(i32, i32)>, HashSet<(i32, i32)>, (i32, i32), (i32, i32)) {
-    let mut file = File::open("test");
+    let mut file = File::open("inputs");
     let result: (HashSet<(i32, i32)>, HashSet<(i32, i32)>, (i32, i32), (i32, i32)) = match file {
         Ok(file) => {
             let lines = io::BufReader::new(file).lines();
@@ -56,62 +56,78 @@ fn read_from_file() -> (HashSet<(i32, i32)>, HashSet<(i32, i32)>, (i32, i32), (i
     result
 }
 
-fn go(walls: &HashSet<(i32, i32)>, space: &HashSet<(i32, i32)>, np: &(i32, i32), end: &(i32, i32), path: &mut Vec<(i32, i32)>, paths: &mut Vec<Vec<(i32, i32)>>) {
-    if end == np {
-        println!("found {:?}", path.len());
-        paths.push(path.clone());
-        return;
-    }
+fn go(walls: &HashSet<(i32, i32)>, space: &mut HashSet<(i32, i32)>, np: &(i32, i32), end: &(i32, i32), path: &mut Vec<(i32, i32)>, paths: &mut Vec<Vec<(i32, i32)>>, queue: &mut VecDeque<(i32, i32)>) {
 
 
-    if !walls.contains(np) {
 
-        //println!("next spot {:?}", np);
 
-        if !path.is_empty() && path.contains(np) {
-            // skip
-        } else {
-            path.push(*np);
-            for (x,y) in [(1,0) , (0,-1) , (-1,0) , (0,1) ] {
-                go(walls, space, &(np.0+x, np.1+y), end, path, paths);
-            }
-            path.pop();
-        }
-    }
+
+
 
 }
 
-fn do_task_one(walls: &HashSet<(i32, i32)>, space: &HashSet<(i32, i32)>, start: &(i32, i32), end: &(i32, i32)) {
-    let mut path: Vec<(i32, i32)> = Vec::new();
-    let mut paths: Vec<Vec<(i32, i32)>> = Vec::new();
+fn do_task_one(walls: &HashSet<(i32, i32)>, space: &mut HashSet<(i32, i32)>, start: &(i32, i32), end: &(i32, i32)) {
+    let mut visited: Vec<(i32, i32)> = Vec::new();
+    let mut paths: Vec<(i32, i32)> = Vec::new();
+    let mut queue: VecDeque<(i32, i32)> = VecDeque::new();
+    let mut orientation: VecDeque<(i32, i32)> = VecDeque::new();
+    let mut costmap: HashMap<(i32, i32), i32> = HashMap::new();
 
-    go(walls, space, start, end, &mut path, &mut paths);
+    queue.push_back(*start);
+    orientation.push_back((1,0));
+    costmap.insert(*start, 1);
 
-    let mut score = 0;
-    let mut path: &Vec<(i32, i32)> = &Vec::new();
-    paths.iter().for_each(|p| {
-        let mut psum = 0;
-        let mut prevorientation = (0,0);
-        for i in 1..p.len() {
-            if (p[i].0 - p[i - 1].0, p[i].1 - p[i - 1].1) != prevorientation {
-                prevorientation = (p[i].0 - p[i - 1].0, p[i].1 - p[i - 1].1);
-                psum += 1000;
+    let mut prev = start.clone();
+    loop {
+        if let Some(p) = queue.pop_front() {
+            let mut prevorientation = orientation.pop_front().unwrap();
+            for (x,y) in [(1,0) , (0,-1) , (-1,0) , (0,1) ] {
+                let nnp = &(p.0+x, p.1+y);
+                if space.contains(nnp) {
+                    let mut d = 1;
+                    if prevorientation != (x,y) {
+                        d += 1000;
+                    }
+                    let prevcost = costmap.get(&p).unwrap();
+
+                    //println!("{:?} {:?} {:?} {:?} {:?} {:?} {:?}", prev, p, nnp, (x,y), prevorientation, &prevcost, d);
+                    if let Some(costs) = costmap.get(nnp) {
+                        if costs > &(prevcost+d) {
+                            costmap.insert(*nnp, (prevcost+d));
+                            queue.push_back(*nnp);
+                            orientation.push_back((x,y));
+
+                        }
+                    } else {
+                        queue.push_back(*nnp);
+                        orientation.push_back((x,y));
+                        costmap.insert(*nnp, (prevcost+d));
+                    }
+
+
+                    space.remove(&nnp);
+
+
+                }
             }
-
-        }
-        psum += p.len();
-        if score == 0 {
-            score = psum;
-            path = &p;
+            prev = p;
         } else {
-            if psum < score {
-                score = psum;
-                path = &p;
+            break;
+        }
+    }
+
+    println!("{:?}", costmap);
+    let mut sum = 0;
+    for (x,y) in [(1,0) , (0,-1) , (-1,0) , (0,1) ] {
+        let bend = (end.0+x, end.1+y);
+        if let Some(val) = costmap.get(&bend) {
+            if sum == 0 || val < &sum {
+                sum = *val;
             }
         }
-    });
+    }
+    println!("{:?}", sum);
 
-    println!("{:?} {:?}", score, path);
 
 }
 
@@ -125,7 +141,7 @@ fn main() {
     let mut inputs = read_from_file();
 
     println!("{:?} {:?} {:?} {:?}", &inputs.0, &inputs.1, &inputs.2,&inputs.3);
-    do_task_one(&inputs.0, &inputs.1, &inputs.2, &inputs.3);
+    do_task_one(&inputs.0, &mut inputs.1, &inputs.2, &inputs.3);
     //do_task_two(&inputs.0, &inputs.1, &inputs.2);
 }
 
